@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #070605;
+  --ink-soft: #12100e;
+  --gold: #e39a2a;
+  --gold-bright: #f3b34a;
+  --gold-dim: rgba(227, 154, 42, 0.28);
+  --cream: #f4ead8;
+  --muted: #b7a48c;
+  --line: rgba(227, 154, 42, 0.38);
+  --danger: #d26a4d;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-cream: var(--cream);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-outfit);
+  --font-display: var(--font-cormorant);
+  --font-script: var(--font-great-vibes);
+  --font-arabic: var(--font-arabic);
+}
+
+html,
+body {
+  background: var(--ink);
+  color: var(--cream);
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+}
+
+html[dir="rtl"] body,
+html[dir="rtl"] .font-display,
+html[dir="rtl"] .font-script {
+  font-family: var(--font-arabic), "Segoe UI", Tahoma, sans-serif;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(227, 154, 42, 0.28);
+  color: var(--cream);
+}
+
+.font-display {
+  font-family: var(--font-cormorant), Georgia, serif;
+}
+
+.font-script {
+  font-family: var(--font-great-vibes), cursive;
+}
+
+.app-frame {
+  width: min(100%, 430px);
+  margin-inline: auto;
+  min-height: 100dvh;
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(227, 154, 42, 0.16), transparent 55%),
+    var(--ink);
+  position: relative;
+  overflow: clip;
+}
+
+.gold-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.price-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.4rem;
+  height: 3.4rem;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  color: var(--gold);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  #qr-print-card,
+  #qr-print-card * {
+    visibility: visible !important;
+  }
+
+  #qr-print-card {
+    position: fixed !important;
+    inset: 0 !important;
+    margin: auto !important;
+    width: min(90vw, 360px) !important;
+    border: 1px solid #d4b48a !important;
+    background: #f4ead8 !important;
+    color: #070605 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
