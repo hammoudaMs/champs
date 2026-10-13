@@ -5,8 +5,9 @@ import { createTicketId } from "@/lib/format";
 import { requireComptoir } from "@/lib/api-guard";
 import { validateOrderPayload } from "@/lib/order-validate";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import { getIdempotentOrder, saveIdempotentOrder } from "@/lib/idempotency";
+import { getIdempotentOrderAsync, saveIdempotentOrderAsync } from "@/lib/idempotency";
 import { listOrders } from "@/lib/orders-store";
+import { fulfillAcceptedOrder } from "@/lib/order-fulfillment";
 
 export const runtime = "nodejs";
 
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
   }
 
   if (validated.idempotencyKey) {
-    const existing = getIdempotentOrder(validated.idempotencyKey);
+    const existing = await getIdempotentOrderAsync(validated.idempotencyKey);
     if (existing) {
       return NextResponse.json({ order: existing }, { status: 200 });
     }
@@ -69,9 +70,10 @@ export async function POST(request: Request) {
   };
 
   await addOrder(order);
+  await fulfillAcceptedOrder(order, validated.idempotencyKey);
 
   if (validated.idempotencyKey) {
-    saveIdempotentOrder(validated.idempotencyKey, order);
+    await saveIdempotentOrderAsync(validated.idempotencyKey, order);
   }
 
   return NextResponse.json({ order }, { status: 201 });

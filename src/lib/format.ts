@@ -6,11 +6,30 @@ export function formatPrice(value: number): string {
   return `${formatted} DT`;
 }
 
+const TUNIS_TZ = "Africa/Tunis";
+
 export function formatClock(date: Date): string {
   return date.toLocaleTimeString("fr-FR", {
+    timeZone: TUNIS_TZ,
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+export function formatDateTimeTunis(iso: string | Date): string {
+  const date = typeof iso === "string" ? new Date(iso) : iso;
+  const parts = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: TUNIS_TZ,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const pick = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  return `${pick("day")}/${pick("month")}/${pick("year")} ${pick("hour")}:${pick("minute")}`;
 }
 
 export function createTicketId(): string {
