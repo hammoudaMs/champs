@@ -1,4 +1,5 @@
 import { CafeApp } from "@/components/cafe-app";
+import { ScanTableGate } from "@/components/scan-table-gate";
 import { firstParam, resolveTableFromQr } from "@/lib/table";
 
 type HomeProps = {
@@ -10,5 +11,9 @@ export default async function Home({ searchParams }: HomeProps) {
   const fromQr = firstParam(params.table) ?? firstParam(params.t);
   const table = resolveTableFromQr(fromQr);
 
-  return <CafeApp table={table} fromQr={Boolean(fromQr)} />;
+  if (!table) {
+    return <ScanTableGate />;
+  }
+
+  return <CafeApp table={table} />;
 }

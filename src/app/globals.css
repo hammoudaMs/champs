@@ -1,44 +1,58 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #070605;
-  --ink-soft: #12100e;
-  --gold: #e39a2a;
-  --gold-bright: #f3b34a;
-  --gold-dim: rgba(227, 154, 42, 0.28);
-  --cream: #f4ead8;
-  --muted: #b7a48c;
-  --line: rgba(227, 154, 42, 0.38);
-  --danger: #d26a4d;
+  --bg: #faf8f3;
+  --surface: #ffffff;
+  --ink-text: #1a1a1a;
+  --muted: #6b6b6b;
+  --accent: #2f3b2a;
+  --accent-soft: #e8ebe4;
+  --line: rgba(26, 26, 26, 0.08);
+  --danger: #b42318;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --radius-card: 16px;
+  --content-max: 640px;
+  --ink: var(--bg);
+  --ink-soft: var(--surface);
+  --cream: var(--ink-text);
+  --gold: var(--accent);
+  --gold-bright: var(--accent);
+  --gold-dim: rgba(47, 59, 42, 0.16);
 }
 
 @theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink-text: var(--ink-text);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
-  --color-gold: var(--gold);
-  --color-gold-bright: var(--gold-bright);
   --color-cream: var(--cream);
   --color-muted: var(--muted);
-  --font-sans: var(--font-outfit);
-  --font-display: var(--font-cormorant);
-  --font-script: var(--font-great-vibes);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-line: var(--line);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
   --font-arabic: var(--font-arabic);
+  --shadow-card: var(--shadow-card);
 }
 
 html,
 body {
-  background: var(--ink);
-  color: var(--cream);
+  background: var(--bg);
+  color: var(--ink-text);
   min-height: 100%;
 }
 
 body {
-  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
 }
 
 html[dir="rtl"] body,
-html[dir="rtl"] .font-display,
-html[dir="rtl"] .font-script {
+html[dir="rtl"] .font-display {
   font-family: var(--font-arabic), "Segoe UI", Tahoma, sans-serif;
 }
 
@@ -47,45 +61,21 @@ html[dir="rtl"] .font-script {
 }
 
 ::selection {
-  background: rgba(227, 154, 42, 0.28);
-  color: var(--cream);
+  background: rgba(47, 59, 42, 0.18);
+  color: var(--ink-text);
 }
 
 .font-display {
-  font-family: var(--font-cormorant), Georgia, serif;
-}
-
-.font-script {
-  font-family: var(--font-great-vibes), cursive;
+  font-family: var(--font-display), Georgia, serif;
 }
 
 .app-frame {
-  width: min(100%, 430px);
+  width: min(100%, var(--content-max));
   margin-inline: auto;
   min-height: 100dvh;
-  background:
-    radial-gradient(120% 60% at 50% -10%, rgba(227, 154, 42, 0.16), transparent 55%),
-    var(--ink);
+  background: var(--bg);
   position: relative;
-  overflow: clip;
-}
-
-.gold-rule {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-}
-
-.price-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 3.4rem;
-  height: 3.4rem;
-  border: 1px solid var(--gold);
-  border-radius: 999px;
-  color: var(--gold);
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
+  overflow-x: clip;
 }
 
 .no-scrollbar {
@@ -94,6 +84,10 @@ html[dir="rtl"] .font-script {
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -123,8 +117,8 @@ html[dir="rtl"] .font-script {
     margin: auto !important;
     width: min(90vw, 360px) !important;
     border: 1px solid #d4b48a !important;
-    background: #f4ead8 !important;
-    color: #070605 !important;
+    background: #faf8f3 !important;
+    color: #1a1a1a !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }

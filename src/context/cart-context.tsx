@@ -56,7 +56,7 @@ function reducer(state: CartState, action: Action): CartState {
         return {
           ...state,
           lines: state.lines.map((line) =>
-            line.key === key ? { ...line, qty: line.qty + 1 } : line,
+            line.key === key ? { ...line, qty: Math.min(20, line.qty + 1) } : line,
           ),
         };
       }
@@ -79,7 +79,7 @@ function reducer(state: CartState, action: Action): CartState {
       return {
         ...state,
         lines: state.lines.map((line) =>
-          line.key === action.key ? { ...line, qty: line.qty + 1 } : line,
+          line.key === action.key ? { ...line, qty: Math.min(20, line.qty + 1) } : line,
         ),
       };
     case "dec":

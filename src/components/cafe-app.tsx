@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { CartProvider, useCart, type PlacedOrder } from "@/context/cart-context";
 import { WelcomeGate } from "@/components/welcome-gate";
 import { MenuView } from "@/components/menu-view";
@@ -47,14 +47,7 @@ function CafeExperience({ table }: { table: TableRef }) {
   );
 }
 
-export function CafeApp({ table, fromQr }: { table: TableRef; fromQr: boolean }) {
-  useEffect(() => {
-    if (fromQr) return;
-    const url = new URL(window.location.href);
-    url.searchParams.set("table", table.id);
-    window.history.replaceState({}, "", url);
-  }, [fromQr, table.id]);
-
+export function CafeApp({ table }: { table: TableRef }) {
   return (
     <main className="app-frame">
       <CartProvider table={table}>

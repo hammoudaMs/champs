@@ -129,7 +129,7 @@ export function CounterBoard() {
           aria-selected={tab === "orders"}
           onClick={() => setTab("orders")}
           className={`min-h-10 flex-1 rounded-full px-4 text-sm ${
-            tab === "orders" ? "bg-gold font-semibold text-ink" : "text-muted"
+            tab === "orders" ? "bg-accent font-semibold text-white" : "text-muted"
           }`}
         >
           {t("counter.tabOrders")}
@@ -140,7 +140,7 @@ export function CounterBoard() {
           aria-selected={tab === "qr"}
           onClick={() => setTab("qr")}
           className={`min-h-10 flex-1 rounded-full px-4 text-sm ${
-            tab === "qr" ? "bg-gold font-semibold text-ink" : "text-muted"
+            tab === "qr" ? "bg-accent font-semibold text-white" : "text-muted"
           }`}
         >
           {t("counter.tabQr")}
@@ -207,7 +207,7 @@ export function CounterBoard() {
                             <button
                               type="button"
                               onClick={() => void advance(order)}
-                              className="min-h-11 rounded-full bg-gold px-4 text-sm font-semibold text-ink"
+                              className="min-h-11 rounded-full bg-accent px-4 text-sm font-semibold text-white"
                             >
                               {t(ACTION_LABEL[order.status]!)}
                             </button>

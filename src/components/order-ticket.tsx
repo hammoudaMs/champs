@@ -69,10 +69,10 @@ export function OrderTicket({ order, onStatus, onNewOrder }: OrderTicketProps) {
       <div className="mb-4 flex justify-center">
         <LanguageSwitcher compact />
       </div>
-      <p className="text-center text-[11px] uppercase tracking-[0.32em] text-gold">
+      <p className="text-center text-[11px] uppercase tracking-[0.32em] text-accent">
         {t("ticket.kicker")}
       </p>
-      <h1 className="mt-3 text-center font-display text-4xl text-cream">
+      <h1 className="mt-3 text-center font-display text-4xl text-ink-text">
         {t(TITLE[order.status])}
       </h1>
       <p className="mx-auto mt-3 max-w-[18rem] text-center text-sm leading-relaxed text-muted">
@@ -93,35 +93,33 @@ export function OrderTicket({ order, onStatus, onNewOrder }: OrderTicketProps) {
             <li key={step} className="flex flex-1 flex-col items-center gap-2">
               <span
                 className={`flex size-8 items-center justify-center rounded-full border text-[11px] ${
-                  done ? "border-gold bg-gold text-ink" : "border-[var(--line)] text-muted"
-                } ${active ? "ring-2 ring-gold/40" : ""}`}
+                  done ? "border-accent bg-accent text-white" : "border-line text-muted"
+                } ${active ? "ring-2 ring-accent/30" : ""}`}
               >
                 {index + 1}
               </span>
-              <span className={`text-[11px] ${done ? "text-gold" : "text-muted"}`}>{label}</span>
+              <span className={`text-[11px] ${done ? "text-accent" : "text-muted"}`}>{label}</span>
             </li>
           );
         })}
       </ol>
 
-      <div className="mt-8 rounded-[1.4rem] border border-[var(--line)] px-5 py-6">
-        <p className="text-center font-display text-4xl tracking-wide text-gold">
+      <div className="mt-8 rounded-[1.4rem] border border-line bg-surface px-5 py-6 shadow-card">
+        <p className="text-center font-display text-4xl tracking-wide text-accent">
           {order.ticketId}
         </p>
-        <div className="gold-rule mx-auto my-4 w-24" />
-        <p className="text-center text-sm text-muted">
+        <p className="mt-4 text-center text-sm text-muted">
           {t("cart.table", { n: order.table.label })}
           {order.guestName ? ` · ${order.guestName}` : ""} · {formatClock(created)}
         </p>
-        <p className="mt-1 text-center text-[11px] tracking-wide text-gold">{order.table.id}</p>
         <ul className="mt-5 space-y-2 text-sm">
           {order.lines.map((line) => (
             <li key={line.key} className="flex justify-between gap-3">
-              <span className="text-cream">
+              <span className="text-ink-text">
                 {line.qty}× {line.name}
                 {line.flavor ? ` (${line.flavor})` : ""}
               </span>
-              <span className="text-gold">{formatPrice(line.price * line.qty)}</span>
+              <span className="text-muted">{formatPrice(line.price * line.qty)}</span>
             </li>
           ))}
         </ul>
@@ -130,16 +128,16 @@ export function OrderTicket({ order, onStatus, onNewOrder }: OrderTicketProps) {
         ) : null}
         <div className="mt-5 flex items-center justify-between">
           <span className="text-xs uppercase tracking-[0.18em] text-muted">{t("cart.total")}</span>
-          <span className="font-display text-2xl text-gold">{formatPrice(order.total)}</span>
+          <span className="font-display text-2xl text-ink-text">{formatPrice(order.total)}</span>
         </div>
       </div>
 
-      <p className="mt-8 text-center font-script text-2xl text-gold">{t("ticket.thanks")}</p>
+      <p className="mt-8 text-center text-sm text-muted">{t("ticket.thanks")}</p>
 
       <button
         type="button"
         onClick={onNewOrder}
-        className="mt-auto flex min-h-12 w-full items-center justify-center rounded-full border border-[var(--line)] text-sm text-cream"
+        className="mt-auto flex min-h-12 w-full items-center justify-center rounded-xl border border-line bg-surface text-sm font-medium text-ink-text"
       >
         {t("ticket.new")}
       </button>
