@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { OrderStatus, StoredOrder } from "@/lib/order-types";
-import { formatClock, formatPrice } from "@/lib/format";
+import { formatDateTimeTunis, formatPrice } from "@/lib/format";
+import { StockPanel } from "@/app/comptoir/stock-panel";
+import { CaissePanel } from "@/app/comptoir/caisse-panel";
 import { useI18n } from "@/i18n/i18n-provider";
 import type { MsgKey } from "@/i18n/fr";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -26,7 +28,7 @@ const ACTION_LABEL: Partial<Record<OrderStatus, MsgKey>> = {
   ready: "counter.served",
 };
 
-type Tab = "orders" | "qr";
+type Tab = "orders" | "qr" | "stock" | "caisse";
 
 export function CounterBoard() {
   const { t } = useI18n();
@@ -145,12 +147,38 @@ export function CounterBoard() {
         >
           {t("counter.tabQr")}
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "stock"}
+          onClick={() => setTab("stock")}
+          className={`min-h-10 flex-1 rounded-full px-3 text-sm ${
+            tab === "stock" ? "bg-accent font-semibold text-white" : "text-muted"
+          }`}
+        >
+          {t("counter.tabStock")}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "caisse"}
+          onClick={() => setTab("caisse")}
+          className={`min-h-10 flex-1 rounded-full px-3 text-sm ${
+            tab === "caisse" ? "bg-accent font-semibold text-white" : "text-muted"
+          }`}
+        >
+          {t("counter.tabCaisse")}
+        </button>
       </div>
 
       {tab === "qr" ? (
         <div className="mt-6">
           <QrTables />
         </div>
+      ) : tab === "stock" ? (
+        <StockPanel />
+      ) : tab === "caisse" ? (
+        <CaissePanel />
       ) : (
         <>
           {error ? (
@@ -178,7 +206,7 @@ export function CounterBoard() {
                             </p>
                             <p className="text-[11px] text-muted">{order.table.id}</p>
                           </div>
-                          <p className="text-sm text-muted">{formatClock(new Date(order.createdAt))}</p>
+                          <p className="text-sm text-muted">{formatDateTimeTunis(order.createdAt)}</p>
                         </div>
                         <ul className="mt-3 space-y-1 text-sm">
                           {order.lines.map((line) => (
