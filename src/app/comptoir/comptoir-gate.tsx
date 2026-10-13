@@ -13,9 +13,18 @@ export function ComptoirGate() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void fetch("/api/comptoir/session", { cache: "no-store" }).then((response) => {
-      setUnlocked(response.ok);
-    });
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/comptoir/session", { cache: "no-store" });
+        if (!cancelled) setUnlocked(response.ok);
+      } catch {
+        if (!cancelled) setUnlocked(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function submit(event?: { preventDefault: () => void }) {
@@ -23,22 +32,32 @@ export function ComptoirGate() {
     if (busy) return;
     setBusy(true);
     setError("");
-    const response = await fetch("/api/comptoir/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin }),
-    });
-    setBusy(false);
-    if (!response.ok) {
-      setError(t("lock.error"));
-      setPin("");
-      return;
+    try {
+      const response = await fetch("/api/comptoir/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin }),
+      });
+      if (response.status === 429) {
+        setError(t("lock.locked"));
+        setPin("");
+        return;
+      }
+      if (!response.ok) {
+        setError(t("lock.error"));
+        setPin("");
+        return;
+      }
+      setUnlocked(true);
+    } catch {
+      setError(t("cart.networkError"));
+    } finally {
+      setBusy(false);
     }
-    setUnlocked(true);
   }
 
   if (unlocked === null) {
-    return <div className="min-h-dvh bg-ink" />;
+    return <div className="min-h-dvh bg-bg" />;
   }
 
   if (!unlocked) {
@@ -47,10 +66,10 @@ export function ComptoirGate() {
         <div className="mb-8 flex justify-center">
           <LanguageSwitcher />
         </div>
-        <p className="text-center text-[11px] uppercase tracking-[0.32em] text-gold">
+        <p className="text-center text-[11px] uppercase tracking-[0.32em] text-accent">
           Café Champ&apos;s
         </p>
-        <h1 className="mt-2 text-center font-display text-4xl text-cream">{t("lock.title")}</h1>
+        <h1 className="mt-2 text-center font-display text-4xl text-ink-text">{t("lock.title")}</h1>
         <p className="mt-2 text-center text-sm text-muted">{t("lock.copy")}</p>
         <form className="mt-8 grid gap-3" onSubmit={(event) => void submit(event)}>
           <label className="grid gap-1 text-sm">
@@ -60,14 +79,14 @@ export function ComptoirGate() {
               onChange={(event) => setPin(event.target.value)}
               inputMode="numeric"
               autoComplete="one-time-code"
-              className="min-h-12 rounded-2xl border border-[var(--line)] bg-ink-soft px-4 text-center text-lg tracking-[0.4em] text-cream outline-none focus:border-gold"
+              className="min-h-12 rounded-xl border border-line bg-surface px-4 text-center text-lg tracking-[0.4em] text-ink-text outline-none focus:border-accent"
             />
           </label>
-          {error ? <p className="text-center text-sm text-[var(--danger)]">{error}</p> : null}
+          {error ? <p className="text-center text-sm text-danger">{error}</p> : null}
           <button
             type="submit"
             disabled={busy || pin.length < 4}
-            className="mt-2 flex min-h-12 items-center justify-center rounded-full bg-gold font-semibold text-ink disabled:opacity-50"
+            className="mt-2 flex min-h-12 items-center justify-center rounded-xl bg-accent font-semibold text-white disabled:opacity-50"
           >
             {t("lock.enter")}
           </button>

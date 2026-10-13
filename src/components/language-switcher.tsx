@@ -21,7 +21,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
             type="button"
             onClick={() => setLocale(option.id)}
             className={`min-h-10 rounded-full border px-3 text-xs tracking-wide ${
-              active ? "border-gold bg-gold text-ink" : "border-[var(--line)] text-muted"
+              active ? "border-accent bg-accent text-white" : "border-line bg-surface text-muted"
             }`}
           >
             {t(option.key)}

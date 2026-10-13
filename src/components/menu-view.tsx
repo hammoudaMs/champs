@@ -1,65 +1,69 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { PROMISES, itemsForFilter, type FilterId } from "@/data/menu";
-import { createTicketId, formatPrice } from "@/lib/format";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  CATEGORIES,
+  MENU,
+  categoryItemCount,
+  featuredItems,
+  itemsByCategory,
+  type CategoryId,
+  type MenuItem,
+} from "@/data/menu";
+import { createIdempotencyKey, createTicketId, formatPrice } from "@/lib/format";
 import { useCart, type PlacedOrder } from "@/context/cart-context";
-import { gsap, registerGsap, useGSAP } from "@/lib/gsap";
-import { CartIcon, ChefIcon, HeartIcon, LeafIcon } from "@/components/icons";
+import { CartIcon } from "@/components/icons";
 import { CartSheet } from "@/components/cart-sheet";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { CategoryFilter } from "@/components/category-filter";
-import { ProductCard } from "@/components/product-card";
+import { MenuListItem } from "@/components/menu-list-item";
+import { ItemDetailSheet } from "@/components/item-detail-sheet";
+import { SiteFooter } from "@/components/site-footer";
 import { useI18n } from "@/i18n/i18n-provider";
 import type { MsgKey } from "@/i18n/fr";
 import type { StoredOrder } from "@/lib/order-types";
-
-registerGsap();
+import { VENUE } from "@/lib/venue";
 
 type MenuViewProps = {
   onPlaced: (order: PlacedOrder) => void;
 };
 
 export function MenuView({ onPlaced }: MenuViewProps) {
-  const root = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
-  const { lines, table, count, total, addItem, inc, dec, qtyForItem, removeOneFromItem } = useCart();
-  const [active, setActive] = useState<FilterId>("all");
-  const [filterOpen, setFilterOpen] = useState(false);
+  const { lines, table, count, total, addItem, inc, dec } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
-  const badgeRef = useRef<HTMLSpanElement>(null);
-  const items = itemsForFilter(active);
-  const heading =
-    active === "all" ? t("menu.filterAll") : t(`category.${active}` as MsgKey);
+  const [detail, setDetail] = useState<MenuItem | null>(null);
+  const [activeCat, setActiveCat] = useState<CategoryId>(CATEGORIES[0].id);
+  const sectionRefs = useRef<Partial<Record<CategoryId, HTMLElement | null>>>({});
+  const popular = useMemo(() => featuredItems(), []);
 
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.from(".product-card", {
-          y: 12,
-          duration: 0.32,
-          stagger: 0.03,
-          ease: "power2.out",
-          clearProps: "transform",
-        });
-      });
-      return () => mm.revert();
-    },
-    { scope: root, dependencies: [active], revertOnUpdate: true },
-  );
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  useGSAP(
-    () => {
-      if (!badgeRef.current || count < 1) return;
-      gsap.fromTo(
-        badgeRef.current,
-        { scale: 0.7 },
-        { scale: 1, duration: 0.22, ease: "back.out(2.5)", overwrite: "auto" },
+    CATEGORIES.forEach((category) => {
+      const node = sectionRefs.current[category.id];
+      if (!node) return;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) setActiveCat(category.id);
+          });
+        },
+        { rootMargin: reduced ? "-20% 0px -55% 0px" : "-25% 0px -55% 0px", threshold: 0.01 },
       );
-    },
-    { dependencies: [count] },
-  );
+      observer.observe(node);
+      observers.push(observer);
+    });
+
+    return () => observers.forEach((observer) => observer.disconnect());
+  }, []);
+
+  function scrollToCategory(id: CategoryId) {
+    setActiveCat(id);
+    sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   async function placeOrder(guestName: string, notes: string) {
     const payload = {
@@ -67,18 +71,27 @@ export function MenuView({ onPlaced }: MenuViewProps) {
       table,
       guestName,
       notes,
-      lines: lines.map((line) => ({ ...line })),
-      total,
+      lines: lines.map((line) => ({
+        itemId: line.itemId,
+        qty: line.qty,
+        flavor: line.flavor,
+      })),
     };
 
     const response = await fetch("/api/orders", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": createIdempotencyKey(),
+      },
       body: JSON.stringify(payload),
     });
 
+    if (response.status === 429) {
+      throw new Error("rate_limited");
+    }
     if (!response.ok) {
-      throw new Error("order");
+      throw new Error(response.status >= 500 ? "network" : "invalid");
     }
 
     const data: unknown = await response.json();
@@ -88,7 +101,7 @@ export function MenuView({ onPlaced }: MenuViewProps) {
         : null;
 
     if (!created?.id) {
-      throw new Error("order");
+      throw new Error("invalid");
     }
 
     onPlaced({
@@ -105,99 +118,183 @@ export function MenuView({ onPlaced }: MenuViewProps) {
   }
 
   return (
-    <div ref={root} className="relative min-h-dvh pb-28">
-      <header className="menu-head sticky top-0 z-20 border-b border-[var(--gold-dim)] bg-ink/90 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.32em] text-gold">
+    <div className="relative min-h-dvh pb-28">
+      <header className="relative overflow-hidden">
+        <div className="relative h-[220px] w-full bg-accent">
+          <Image
+            src="/menu/hero-cup.jpg"
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 640px) 100vw, 640px"
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/20" />
+          <div className="absolute inset-x-0 bottom-0 px-4 pb-5 pt-16 text-white">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-white/80">
               {t("menu.selfService", { n: table.label })}
             </p>
-            <h1 className="font-display text-[1.85rem] leading-none text-cream">
-              Café Champ&apos;s
-            </h1>
+            <h1 className="mt-1 font-display text-4xl leading-none">Café Champ&apos;s</h1>
+            <p className="mt-1 text-sm text-white/85">{VENUE.hours}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 px-4 py-3">
+          <a
+            href={VENUE.instagram}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-text shadow-card"
+          >
+            {t("menu.instagram")}
+          </a>
+          <span className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-text shadow-card">
+            {t("menu.wifi")}
+          </span>
+          <span className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-text shadow-card">
+            {t("menu.hours")}
+          </span>
+          <div className="ms-auto">
+            <LanguageSwitcher compact />
           </div>
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="relative flex size-12 items-center justify-center rounded-full border border-[var(--line)] text-gold"
+            className="relative flex size-10 items-center justify-center rounded-full border border-line bg-surface text-accent shadow-card"
             aria-label={t("menu.cart", { n: count })}
           >
             <CartIcon className="size-5" />
             {count > 0 ? (
-              <span
-                ref={badgeRef}
-                className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-gold text-[10px] font-semibold text-ink"
-              >
+              <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-white">
                 {count}
               </span>
             ) : null}
           </button>
         </div>
-        <div className="mt-3">
-          <LanguageSwitcher compact />
-        </div>
-        <div className="mt-3">
-          <CategoryFilter
-            active={active}
-            onChange={setActive}
-            open={filterOpen}
-            onOpen={() => setFilterOpen(true)}
-            onClose={() => setFilterOpen(false)}
-          />
-        </div>
       </header>
 
-      <section className="px-4 pt-4">
-        <div className="mb-3 flex items-end justify-between gap-3">
-          <h2 className="font-display text-2xl leading-none text-cream">{heading}</h2>
-          <p className="text-xs text-muted">{t("menu.results", { n: items.length })}</p>
-        </div>
-        <div className="grid grid-cols-2 gap-2.5">
-          {items.map((item) => (
-            <ProductCard
+      <section className="px-4 pt-2">
+        <h2 className="font-display text-2xl text-ink-text">{t("menu.popular")}</h2>
+        <div className="mt-3 flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+          {popular.map((item) => (
+            <button
               key={item.id}
-              item={item}
-              qty={qtyForItem(item.id)}
-              onAdd={addItem}
-              onRemove={removeOneFromItem}
-            />
+              type="button"
+              onClick={() => setDetail(item)}
+              className="relative h-[180px] w-[150px] shrink-0 overflow-hidden rounded-2xl bg-accent-soft shadow-card"
+            >
+              {item.image ? (
+                <Image
+                  src={item.image}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="150px"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="flex size-full items-center justify-center font-display text-3xl text-accent">
+                  C
+                </div>
+              )}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-2.5 pb-2.5 pt-10 text-start text-white">
+                <p className="line-clamp-2 text-xs font-semibold leading-snug">{item.name}</p>
+                <p className="mt-0.5 text-[11px] opacity-90">{formatPrice(item.price)}</p>
+              </div>
+            </button>
           ))}
         </div>
       </section>
 
-      <section className="mt-6 flex gap-2 overflow-x-auto px-4 pb-6">
-        {PROMISES.map((promise) => (
-          <div
-            key={promise.id}
-            className="flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-[var(--line)] px-3"
-          >
-            {promise.id === "homemade" ? (
-              <ChefIcon className="size-3.5 text-gold" />
-            ) : promise.id === "service" ? (
-              <HeartIcon className="size-3.5 text-gold" />
-            ) : (
-              <LeafIcon className="size-3.5 text-gold" />
-            )}
-            <p className="text-[10px] uppercase tracking-[0.12em] text-gold">
-              {t(`promise.${promise.id}` as MsgKey)}
-            </p>
-          </div>
-        ))}
-      </section>
+      <nav
+        className="sticky top-0 z-20 mt-4 border-b border-line bg-bg/95 px-4 py-2 backdrop-blur-md"
+        aria-label={t("menu.categories")}
+      >
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          {CATEGORIES.map((category) => {
+            const selected = activeCat === category.id;
+            const countItems = categoryItemCount(category.id);
+            const thumb = MENU.find((item) => item.category === category.id && item.image)?.image;
+            return (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => scrollToCategory(category.id)}
+                className={`flex shrink-0 items-center gap-2 rounded-full border px-2.5 py-1.5 text-xs ${
+                  selected
+                    ? "border-accent bg-accent text-white"
+                    : "border-line bg-surface text-ink-text"
+                }`}
+              >
+                <span className="relative size-7 overflow-hidden rounded-full bg-accent-soft">
+                  {thumb ? (
+                    <Image src={thumb} alt="" fill className="object-cover" sizes="28px" />
+                  ) : (
+                    <span className="flex size-full items-center justify-center text-[10px] font-bold text-accent">
+                      C
+                    </span>
+                  )}
+                </span>
+                <span className="whitespace-nowrap font-medium">
+                  {t(`category.${category.id}` as MsgKey)}
+                </span>
+                <span className={selected ? "text-white/80" : "text-muted"}>{countItems}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      <div className="mt-4 space-y-8 px-4">
+        {CATEGORIES.map((category) => {
+          const items = itemsByCategory(category.id);
+          if (items.length === 0) return null;
+          return (
+            <section
+              key={category.id}
+              id={`cat-${category.id}`}
+              ref={(node) => {
+                sectionRefs.current[category.id] = node;
+              }}
+              className="scroll-mt-24"
+            >
+              <div className="mb-3 flex items-end justify-between gap-3">
+                <h2 className="font-display text-3xl leading-none text-ink-text">
+                  {t(`category.${category.id}` as MsgKey)}
+                </h2>
+                <p className="text-xs text-muted">
+                  {t("menu.itemsCount", { n: items.length })}
+                </p>
+              </div>
+              <div className="grid gap-3">
+                {items.map((item) => (
+                  <MenuListItem key={item.id} item={item} onOpen={setDetail} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+
+      <div className="mt-10">
+        <SiteFooter />
+      </div>
 
       {count > 0 ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[430px] px-4 pb-[max(0.9rem,env(safe-area-inset-bottom))]">
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[640px] px-4 pb-[max(0.9rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="pointer-events-auto flex min-h-14 w-full items-center justify-between rounded-full bg-gold px-5 text-ink shadow-[0_12px_40px_rgba(227,154,42,0.28)]"
+            className="pointer-events-auto flex min-h-14 w-full items-center justify-between rounded-xl bg-accent px-5 text-white shadow-[0_12px_40px_rgba(47,59,42,0.28)]"
           >
             <span className="text-sm font-semibold">
-              {t("menu.viewCart", { n: count })}
+              {t("cart.viewTotal", { n: count, total: formatPrice(total) })}
             </span>
-            <span className="font-display text-xl">{formatPrice(total)}</span>
           </button>
         </div>
+      ) : null}
+
+      {detail ? (
+        <ItemDetailSheet item={detail} onClose={() => setDetail(null)} onAdd={addItem} />
       ) : null}
 
       {cartOpen ? (
@@ -211,6 +308,10 @@ export function MenuView({ onPlaced }: MenuViewProps) {
           onSubmit={placeOrder}
         />
       ) : null}
+
+      <Link href="/comptoir" className="sr-only">
+        Comptoir
+      </Link>
     </div>
   );
 }
